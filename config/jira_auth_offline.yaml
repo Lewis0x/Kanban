@@ -1,0 +1,50 @@
+base_url: https://jira.example.com/
+username: offline
+password: offline
+verify_ssl: true
+request_timeout_seconds: 30
+status_mapping:
+  todo:
+    - Open
+    - To Do
+    - Backlog
+    - 已分配
+  in_progress:
+    - In Progress
+    - Development
+    - 正在解决
+  review:
+    - In Review
+    - Code Review
+    - 审核中
+  done:
+    - Done
+    - Resolved
+    - Closed
+    - 已关闭
+    - 测试中
+    - 主干已解决
+role_settings:
+  product_manager_roles:
+    - 胡梦
+    - 雷洁
+    - 张森森
+    - 翟悦
+    - 谈泰武
+  dev_manager_roles:
+    - 陈兴
+    - 曹辛笛
+  developer_roles:
+    - 谢屹
+    - 张锐岩
+    - 戴建龙
+    - 侯邦庆
+    - 谢一飞
+    - 石茂卿
+    - 张剑锋
+    - 蔡旭锋
+  quality_roles:
+    - 李启沆
+jql_filters:
+  - project = ZWCAD
+  - 'Sprint in openSprints() AND "Task Owner" in (chenxing, daijianlong, caixufeng, houbangqing, xieyifei, shimaoqing, zhangruiyan, xieyi, zhangjianfeng)'

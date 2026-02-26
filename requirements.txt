@@ -1,0 +1,6 @@
+Flask==3.0.3
+requests==2.32.3
+PyYAML==6.0.2
+pytest==8.3.4
+openpyxl==3.1.5
+matplotlib==3.9.2

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jira Sprint Kanban</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Jira Sprint Kanban</h1>
+      <p id="cacheSource" class="status-text">数据源：storage/jira_query_cache</p>
+    </div>
+    <div class="top-actions">
+      <span id="lastRefreshAt" class="status-text">最近刷新：-</span>
+      <button id="syncJiraBtn">从JIRA更新</button>
+      <button id="refreshBtn">刷新</button>
+      <a id="csvExport" href="#">CSV</a>
+      <a id="xlsxExport" href="#">Excel</a>
+      <a id="pngExport" href="#">PNG</a>
+    </div>
+  </header>
+
+  <section class="filters-panel">
+    <div class="filters-row">
+      <select id="assigneeSelect">
+        <option value="">全部负责人</option>
+      </select>
+      <select id="prioritySelect">
+        <option value="">全部优先级</option>
+      </select>
+      <input id="keywordInput" placeholder="搜索 key 或 summary" />
+      <select id="windowSelect">
+        <option value="weekly">周期：本周</option>
+        <option value="rolling_7d">周期：最近7天</option>
+        <option value="sprint">周期：当前Sprint</option>
+        <option value="custom">周期：自定义</option>
+      </select>
+      <div id="customDateRange" class="custom-date-range">
+        <input id="periodStartInput" type="date" />
+        <input id="periodEndInput" type="date" />
+      </div>
+      <button id="toggleAdvancedFilters" class="ghost-btn" type="button">高级筛选</button>
+    </div>
+
+    <div id="advancedFilters" class="filters-row collapsed">
+      <select id="sourceModeSelect">
+        <option value="auto">数据来源：自动（优先匹配JQL）</option>
+        <option value="requested">数据来源：仅匹配当前JQL</option>
+        <option value="latest">数据来源：最新缓存</option>
+        <option value="cache_id">数据来源：指定缓存</option>
+      </select>
+      <select id="cacheIdSelect" disabled>
+        <option value="">选择缓存文件</option>
+      </select>
+      <input id="jqlInput" placeholder="自定义JQL（可选）" />
+      <pre id="jqlPreview">-</pre>
+    </div>
+  </section>
+
+  <section class="summary-panel">
+    <h2>周期总结</h2>
+    <div class="summary-cards" id="summaryCards">
+      <div class="summary-card"><strong>本周期分配</strong><div id="sumAssigned">-</div></div>
+      <div class="summary-card"><strong>本周期已解决</strong><div id="sumResolved">-</div></div>
+      <div class="summary-card"><strong>本周期未解决</strong><div id="sumUnresolved">-</div></div>
+      <div class="summary-card"><strong>重开事件</strong><div id="sumReopened">-</div></div>
+      <div class="summary-card"><strong>New Issue</strong><div id="sumNewIssue">-</div></div>
+      <div class="summary-card"><strong>评估后转出</strong><div id="sumTransferOut">-</div></div>
+      <div class="summary-card"><strong>净变化</strong><div id="sumNet">-</div></div>
+    </div>
+    <div class="summary-text">
+      <textarea id="summaryText" readonly rows="2" placeholder="周期总结文本"></textarea>
+      <button id="copySummaryBtn">复制总结</button>
+    </div>
+    <pre id="summaryIssueKeys" class="summary-issue-keys">问题号明细：-</pre>
+  </section>
+
+  <section class="content workspace">
+    <div class="kanban" id="kanban"></div>
+    <aside class="details" id="details">点击卡片查看详情</aside>
+  </section>
+
+  <section class="analysis-panel">
+    <div class="analysis-header">
+      <h2>分析区</h2>
+      <div class="analysis-actions">
+        <select id="modeSelect">
+          <option value="member">甘特按责任开发</option>
+          <option value="sprint">甘特按 Sprint</option>
+        </select>
+        <button id="toggleAnalysisBtn" class="ghost-btn" type="button">收起分析区</button>
+      </div>
+    </div>
+
+    <div id="analysisBody">
+      <section>
+        <h3>风险聚焦</h3>
+        <div class="focus-grid">
+          <div>
+            <h4>Reopened（本周期）</h4>
+            <table id="reopenedTable">
+              <thead>
+                <tr>
+                  <th>问题</th>
+                  <th>重开次数</th>
+                  <th>责任开发</th>
+                  <th>最后重开时间</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div>
+            <h4>New Issue（本周期）</h4>
+            <table id="newIssueTable">
+              <thead>
+                <tr>
+                  <th>问题</th>
+                  <th>责任开发</th>
+                  <th>创建时间</th>
+                  <th>状态</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div>
+            <h4>评估后转出（本周期）</h4>
+            <table id="transferOutTable">
+              <thead>
+                <tr>
+                  <th>问题</th>
+                  <th>团队</th>
+                  <th>转出流向</th>
+                  <th>转出次数</th>
+                  <th>最后转出时间</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>成员指标</h3>
+        <div id="metricsGroups"></div>
+      </section>
+
+      <section>
+        <h3>甘特视图</h3>
+        <div id="gantt"></div>
+      </section>
+    </div>
+  </section>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

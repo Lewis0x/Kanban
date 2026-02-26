@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+
+# Test & cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Config (contains credentials)
+config/jira_auth.yaml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Runtime data
+storage/

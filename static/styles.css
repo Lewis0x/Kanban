@@ -1,0 +1,255 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #1f2328;
+  background: #f7f8fa;
+}
+
+h1 {
+  margin: 0;
+}
+
+h2,
+h3,
+h4 {
+  margin: 0 0 8px;
+}
+
+.topbar,
+.filters-panel,
+.summary-panel,
+.workspace,
+.analysis-panel {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-text {
+  margin: 4px 0 0;
+  color: #57606a;
+  font-size: 13px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filters-row + .filters-row {
+  margin-top: 8px;
+}
+
+select,
+input,
+button,
+a {
+  font-size: 14px;
+}
+
+select,
+input,
+button {
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: #fff;
+}
+
+input#keywordInput,
+input#jqlInput {
+  min-width: 240px;
+}
+
+.custom-date-range {
+  display: flex;
+  gap: 8px;
+}
+
+.ghost-btn {
+  background: #f6f8fa;
+}
+
+.collapsed {
+  display: none;
+}
+
+#jqlPreview {
+  margin: 0;
+  padding: 8px;
+  background: #f6f8fa;
+  border-radius: 6px;
+  border: 1px solid #d8dee4;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.summary-card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fbfbfc;
+}
+
+.summary-card div {
+  margin-top: 6px;
+  font-size: 18px;
+}
+
+.summary-text {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.summary-text textarea {
+  width: 100%;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.summary-issue-keys {
+  margin: 8px 0 0;
+  padding: 8px;
+  white-space: pre-wrap;
+  border: 1px solid #d8dee4;
+  border-radius: 6px;
+  background: #f6f8fa;
+}
+
+.focus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 12px;
+}
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.column {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  min-height: 420px;
+  max-height: 620px;
+  overflow-y: auto;
+  background: #fcfcfd;
+}
+
+.card {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.details {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px;
+  min-height: 420px;
+  max-height: 620px;
+  overflow-y: auto;
+  background: #fcfcfd;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  text-align: left;
+}
+
+.metrics-subtotal td {
+  font-weight: 600;
+}
+
+.metrics-group + .metrics-group {
+  margin-top: 12px;
+}
+
+.analysis-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.analysis-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#analysisBody section + section {
+  margin-top: 12px;
+}
+
+#gantt .lane {
+  margin-bottom: 8px;
+}
+
+#gantt .bar {
+  display: inline-block;
+  height: 16px;
+  margin-left: 8px;
+  background: #5b8def;
+}
+
+@media (max-width: 1280px) {
+  .kanban {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+
+  .focus-grid,
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
