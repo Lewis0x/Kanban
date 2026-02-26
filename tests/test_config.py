@@ -29,30 +29,30 @@ status_mapping:
         - 已关闭
 role_settings:
     product_manager_roles:
-        - humeng
-        - 胡梦
+        - pm_alpha
+        - 产品甲
     dev_manager_roles:
-        - hushengquan
-        - 胡圣泉
+        - mgr_alpha
+        - 开发经理甲
     developer_roles:
-        - xieyi
-        - 谢屹
+        - dev_alpha
+        - 开发甲
     quality_roles:
-        - humeng
-        - 胡梦
+        - qa_alpha
+        - 测试甲
 teams:
     - id: platform
       name: 平台组
-      owner: hushengquan
+      owner: mgr_alpha
       members:
-          - chenxing
-          - daijianlong
+          - dev_alpha
+          - dev_beta
     - id: feature
       name: 功能组
-      owner: humeng
+      owner: pm_alpha
       members:
-          - xieyi
-          - zhangjianfeng
+          - dev_gamma
+          - dev_delta
 filter_settings:
     allowed_filter_ids:
         - 1001
@@ -74,13 +74,13 @@ jql_filters:
     assert cfg["status_mapping"]["in_progress"] == ["In Progress", "开发中"]
     assert cfg["status_mapping"]["review"] == ["审核中", "In Review"]
     assert cfg["status_mapping"]["done"] == ["Done", "已关闭"]
-    assert cfg["role_settings"]["product_manager_roles"] == ["humeng", "胡梦"]
-    assert cfg["role_settings"]["dev_manager_roles"] == ["hushengquan", "胡圣泉"]
-    assert cfg["role_settings"]["developer_roles"] == ["xieyi", "谢屹"]
-    assert cfg["role_settings"]["quality_roles"] == ["humeng", "胡梦"]
+    assert cfg["role_settings"]["product_manager_roles"] == ["pm_alpha", "产品甲"]
+    assert cfg["role_settings"]["dev_manager_roles"] == ["mgr_alpha", "开发经理甲"]
+    assert cfg["role_settings"]["developer_roles"] == ["dev_alpha", "开发甲"]
+    assert cfg["role_settings"]["quality_roles"] == ["qa_alpha", "测试甲"]
     assert cfg["teams"][0]["id"] == "platform"
-    assert cfg["teams"][0]["owner"] == "hushengquan"
-    assert cfg["teams"][0]["members"] == ["chenxing", "daijianlong"]
+    assert cfg["teams"][0]["owner"] == "mgr_alpha"
+    assert cfg["teams"][0]["members"] == ["dev_alpha", "dev_beta"]
     assert cfg["teams"][1]["name"] == "功能组"
     assert cfg["filter_settings"]["allowed_filter_ids"] == ["1001", "1002"]
     assert cfg["filter_settings"]["default_filter_id"] == "1002"

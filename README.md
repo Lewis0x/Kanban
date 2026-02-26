@@ -102,10 +102,10 @@ jql_filters:
 teams:
 	- id: platform
 	  name: 平台组
-	  owner: hushengquan
+	  owner: mgr_alpha
 	  members:
-		- chenxing
-		- daijianlong
+		- dev_alpha
+		- dev_beta
 ```
 
 周期总结中“评估后转出”口径：

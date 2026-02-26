@@ -26,25 +26,25 @@ status_mapping:
     - 主干已解决
 role_settings:
   product_manager_roles:
-    - 胡梦
-    - 雷洁
-    - 张森森
-    - 翟悦
-    - 谈泰武
+    - 产品甲
+    - 产品乙
+    - 产品丙
+    - 产品丁
+    - 产品戊
   dev_manager_roles:
-    - 陈兴
-    - 曹辛笛
+    - 开发经理甲
+    - 开发经理乙
   developer_roles:
-    - 谢屹
-    - 张锐岩
-    - 戴建龙
-    - 侯邦庆
-    - 谢一飞
-    - 石茂卿
-    - 张剑锋
-    - 蔡旭锋
+    - 开发甲
+    - 开发乙
+    - 开发丙
+    - 开发丁
+    - 开发戊
+    - 开发己
+    - 开发庚
+    - 开发辛
   quality_roles:
-    - 李启沆
+    - 测试甲
 jql_filters:
   - project = ZWCAD
-  - 'Sprint in openSprints() AND "Task Owner" in (chenxing, daijianlong, caixufeng, houbangqing, xieyifei, shimaoqing, zhangruiyan, xieyi, zhangjianfeng)'
+  - 'Sprint in openSprints() AND "Task Owner" in (dev_alpha, dev_beta, dev_gamma, dev_delta, dev_epsilon, dev_zeta, dev_eta, dev_theta, dev_iota)'

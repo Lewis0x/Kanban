@@ -71,17 +71,17 @@ def test_extract_timeline_with_role_settings():
             "histories": [
                 {
                     "created": "2026-02-02T08:00:00.000+00:00",
-                    "items": [{"field": "assignee", "to": "humeng", "toString": "胡梦"}],
+                    "items": [{"field": "assignee", "to": "pm_alpha", "toString": "产品甲"}],
                 },
                 {
                     "created": "2026-02-03T08:00:00.000+00:00",
                     "items": [
                         {
                             "field": "assignee",
-                            "from": "hushengquan",
-                            "fromString": "胡圣泉",
-                            "to": "xieyi",
-                            "toString": "谢屹",
+                            "from": "mgr_alpha",
+                            "fromString": "开发经理甲",
+                            "to": "dev_alpha",
+                            "toString": "开发甲",
                         }
                     ],
                 },
@@ -91,17 +91,17 @@ def test_extract_timeline_with_role_settings():
     timeline = extract_timeline(
         issue,
         role_settings={
-            "product_manager_roles": ["humeng"],
-            "dev_manager_roles": ["hushengquan"],
-            "developer_roles": ["xieyi", "谢屹"],
+            "product_manager_roles": ["pm_alpha"],
+            "dev_manager_roles": ["mgr_alpha"],
+            "developer_roles": ["dev_alpha", "开发甲"],
         },
-        teams=[{"id": "algo", "name": "算法组", "members": ["xieyi", "谢屹"]}],
+        teams=[{"id": "algo", "name": "算法组", "members": ["dev_alpha", "开发甲"]}],
     )
     assert timeline["product_assigned_at"] == "2026-02-02T08:00:00.000+00:00"
-    assert timeline["product_assigned_to"] == "胡梦"
+    assert timeline["product_assigned_to"] == "产品甲"
     assert timeline["dev_manager_assigned_at"] == "2026-02-03T08:00:00.000+00:00"
-    assert timeline["dev_manager_assigned_from"] == "胡圣泉"
-    assert timeline["dev_manager_assigned_to"] == "谢屹"
+    assert timeline["dev_manager_assigned_from"] == "开发经理甲"
+    assert timeline["dev_manager_assigned_to"] == "开发甲"
     assert timeline["developer_started_at"] == "2026-02-03T08:00:00.000+00:00"
 
 
@@ -115,8 +115,8 @@ def test_extract_timeline_uses_last_dev_manager_assignment_time():
                     "items": [
                         {
                             "field": "assignee",
-                            "from": "hushengquan",
-                            "fromString": "胡圣泉",
+                            "from": "mgr_alpha",
+                            "fromString": "开发经理甲",
                             "to": "dev_a",
                             "toString": "开发A",
                         }
@@ -127,8 +127,8 @@ def test_extract_timeline_uses_last_dev_manager_assignment_time():
                     "items": [
                         {
                             "field": "assignee",
-                            "from": "hushengquan",
-                            "fromString": "胡圣泉",
+                            "from": "mgr_alpha",
+                            "fromString": "开发经理甲",
                             "to": "dev_a",
                             "toString": "开发A",
                         }
@@ -141,14 +141,14 @@ def test_extract_timeline_uses_last_dev_manager_assignment_time():
     timeline = extract_timeline(
         issue,
         role_settings={
-            "dev_manager_roles": ["hushengquan", "胡圣泉"],
+            "dev_manager_roles": ["mgr_alpha", "开发经理甲"],
             "developer_roles": ["dev_a", "开发A"],
         },
         teams=[{"id": "algo", "name": "算法组", "members": ["dev_a", "开发A"]}],
     )
 
     assert timeline["dev_manager_assigned_at"] == "2026-02-05T09:30:00.000+00:00"
-    assert timeline["dev_manager_assigned_from"] == "胡圣泉"
+    assert timeline["dev_manager_assigned_from"] == "开发经理甲"
     assert timeline["dev_manager_assigned_to"] == "开发A"
 
 
@@ -175,7 +175,7 @@ def test_extract_timeline_dev_manager_assignment_requires_config_roles_and_team_
                         {
                             "field": "assignee",
                             "from": "chenxing",
-                            "fromString": "陈兴",
+                            "fromString": "开发经理乙",
                             "to": "dev_a",
                             "toString": "开发A",
                         }
@@ -188,7 +188,7 @@ def test_extract_timeline_dev_manager_assignment_requires_config_roles_and_team_
     timeline = extract_timeline(
         issue,
         role_settings={
-            "dev_manager_roles": ["chenxing", "陈兴"],
+            "dev_manager_roles": ["chenxing", "开发经理乙"],
         },
         teams=[
             {
@@ -200,7 +200,7 @@ def test_extract_timeline_dev_manager_assignment_requires_config_roles_and_team_
     )
 
     assert timeline["dev_manager_assigned_at"] == "2026-02-05T09:00:00.000+00:00"
-    assert timeline["dev_manager_assigned_from"] == "陈兴"
+    assert timeline["dev_manager_assigned_from"] == "开发经理乙"
     assert timeline["dev_manager_assigned_to"] == "开发A"
 
 
@@ -211,7 +211,7 @@ def test_normalize_issue_metric_owner_prefers_last_non_pm_assignee():
             "summary": "workflow",
             "status": {"name": "Done"},
             "priority": {"name": "High"},
-            "assignee": {"displayName": "胡梦", "name": "humeng"},
+            "assignee": {"displayName": "产品甲", "name": "pm_alpha"},
             "issuetype": {"name": "缺陷"},
             "created": "2026-02-01T00:00:00+00:00",
         },
@@ -223,7 +223,7 @@ def test_normalize_issue_metric_owner_prefers_last_non_pm_assignee():
                 },
                 {
                     "created": "2026-02-03T00:00:00+00:00",
-                    "items": [{"field": "assignee", "to": "humeng", "toString": "胡梦"}],
+                    "items": [{"field": "assignee", "to": "pm_alpha", "toString": "产品甲"}],
                 },
             ]
         },
@@ -232,9 +232,9 @@ def test_normalize_issue_metric_owner_prefers_last_non_pm_assignee():
     card = normalize_issue(
         issue,
         base_url="https://jira.example.com",
-        role_settings={"product_manager_roles": ["humeng", "胡梦"]},
+        role_settings={"product_manager_roles": ["pm_alpha", "产品甲"]},
     )
-    assert card["assignee"] == "胡梦"
+    assert card["assignee"] == "产品甲"
     assert card["metric_owner"] == "开发A"
 
 
