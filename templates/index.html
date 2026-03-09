@@ -67,14 +67,12 @@
       <div class="summary-card"><strong>本周期未解决</strong><div id="sumUnresolved">-</div></div>
       <div class="summary-card"><strong>重开事件</strong><div id="sumReopened">-</div></div>
       <div class="summary-card"><strong>New Issue</strong><div id="sumNewIssue">-</div></div>
-      <div class="summary-card"><strong>评估后转出</strong><div id="sumTransferOut">-</div></div>
       <div class="summary-card"><strong>净变化</strong><div id="sumNet">-</div></div>
     </div>
     <div class="summary-text">
       <textarea id="summaryText" readonly rows="2" placeholder="周期总结文本"></textarea>
       <button id="copySummaryBtn">复制总结</button>
     </div>
-    <pre id="summaryIssueKeys" class="summary-issue-keys">问题号明细：-</pre>
   </section>
 
   <section class="content workspace">
@@ -126,27 +124,25 @@
               <tbody></tbody>
             </table>
           </div>
-          <div>
-            <h4>评估后转出（本周期）</h4>
-            <table id="transferOutTable">
-              <thead>
-                <tr>
-                  <th>问题</th>
-                  <th>团队</th>
-                  <th>转出流向</th>
-                  <th>转出次数</th>
-                  <th>最后转出时间</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
         </div>
       </section>
 
       <section>
         <h3>成员指标</h3>
-        <div id="metricsGroups"></div>
+        <table id="metricsTable">
+          <thead>
+            <tr>
+              <th>成员</th>
+              <th>总数</th>
+              <th>已解决</th>
+              <th>解决率</th>
+              <th>WIP</th>
+              <th>平均LeadTime(小时)</th>
+              <th>加权进度</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </section>
 
       <section>

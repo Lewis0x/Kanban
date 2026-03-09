@@ -25,6 +25,3 @@ config/jira_auth.yaml
 # OS
 Thumbs.db
 .DS_Store
-
-# Runtime data
-storage/

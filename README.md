@@ -8,7 +8,6 @@
 - 统一筛选：JQL、负责人、优先级、关键字
 - 甘特视图：按成员或按 Sprint 展示问题生命周期时间轴
 - 指标：解决率、平均 Lead Time、WIP、优先级加权进度
-- 团队统计：支持多团队配置（成员+负责人），周期内统计“评估后转出”（问题数+流转次数）
 - 导出：CSV、Excel、PNG
 
 ## 快速开始
@@ -32,7 +31,6 @@ copy config\jira_auth.example.yaml config\jira_auth.yaml
 	- `base_url`: JIRA 域名
 	- `username`: 账号（通常为邮箱）
 	- `password`: 账号密码
-	- `teams`: 团队配置（可选，多团队；每个团队含 `id/name/owner/members`）
 	- `jql_filters`: 预置 JQL 过滤条件列表（可选）
 3. 启动服务：`python -m flask --app app.main run --debug`
 
@@ -46,7 +44,16 @@ copy config\jira_auth.example.yaml config\jira_auth.yaml
 	- 产品分配时间（首次 assignee 变更）
 	- 开发经理分配时间（第二次 assignee 变更）
 	- 进入 In Progress 时间
-	- 解决时间
+	- 解决时间（若多次进入 Done，以最后一次进入 Done 的时间为准）
+
+### 2.1 周期总结口径
+
+- `本周期分配`：统计周期窗口内 `dev_manager_assigned_at` 的问题数
+- `本周期解决`：统计周期窗口内 `resolved_at` 的问题数（`resolved_at` 取最后一次进入 Done 的时间）
+- `本周期未解决`：统计周期窗口内被开发经理分配且当前 `resolved_at` 为空的问题数
+- `重开事件`：统计周期窗口内 `reopened_events` 的事件次数（同一问题可多次计数）
+- `New Issue`：统计周期窗口内 `created_at` 的问题数
+- `净变化`：`New Issue - 本周期解决`
 
 ### 3. 甘特图操作
 
@@ -75,6 +82,7 @@ copy config\jira_auth.example.yaml config\jira_auth.yaml
 - 401/403：检查 `username/password` 是否正确，确认对问题有访问权限
 - 429：JIRA 限流，稍后重试
 - 时间节点为空：该问题在 changelog 中没有对应状态/指派变更记录
+- 周期总结为 0：确认时间字段格式是否可解析（系统兼容 `Z`、`+08:00`、`+0800`）
 
 ## 配置
 
@@ -86,7 +94,6 @@ copy config\jira_auth.example.yaml config\jira_auth.yaml
 - `verify_ssl`: 是否校验证书
 - `request_timeout_seconds`: 请求超时
 - `jql_filters`: 预置 JQL 条件数组，系统会自动以 `AND` 拼接各条件
-- `teams`: 团队列表（可选），用于周期总结中的团队内外流转统计
 
 示例：
 
@@ -99,19 +106,7 @@ request_timeout_seconds: 30
 jql_filters:
 	- project = CAD
 	- issuetype in (Bug, Task, Story)
-teams:
-	- id: platform
-	  name: 平台组
-	  owner: mgr_alpha
-	  members:
-		- dev_alpha
-		- dev_beta
 ```
-
-周期总结中“评估后转出”口径：
-- 统计周期内发生的团队内 -> 团队外指派流转事件数；
-- 同时统计问题数；
-- 若问题在周期结束前已回转到该团队成员，则不计入该团队“转出问题数”（但流转事件仍计数）。
 
 ## 测试
 

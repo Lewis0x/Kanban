@@ -134,15 +134,6 @@ input#jqlInput {
   padding: 8px;
 }
 
-.summary-issue-keys {
-  margin: 8px 0 0;
-  padding: 8px;
-  white-space: pre-wrap;
-  border: 1px solid #d8dee4;
-  border-radius: 6px;
-  background: #f6f8fa;
-}
-
 .focus-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -201,14 +192,6 @@ td {
   border: 1px solid #ddd;
   padding: 6px;
   text-align: left;
-}
-
-.metrics-subtotal td {
-  font-weight: 600;
-}
-
-.metrics-group + .metrics-group {
-  margin-top: 12px;
 }
 
 .analysis-header {

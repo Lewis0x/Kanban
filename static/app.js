@@ -19,23 +19,20 @@ const elements = {
   copySummaryBtn: document.getElementById("copySummaryBtn"),
   kanban: document.getElementById("kanban"),
   details: document.getElementById("details"),
-  metricsGroups: document.getElementById("metricsGroups"),
+  metricsBody: document.querySelector("#metricsTable tbody"),
   gantt: document.getElementById("gantt"),
   jqlPreview: document.getElementById("jqlPreview"),
   cacheSource: document.getElementById("cacheSource"),
   lastRefreshAt: document.getElementById("lastRefreshAt"),
   summaryText: document.getElementById("summaryText"),
-  summaryIssueKeys: document.getElementById("summaryIssueKeys"),
   sumAssigned: document.getElementById("sumAssigned"),
   sumResolved: document.getElementById("sumResolved"),
   sumUnresolved: document.getElementById("sumUnresolved"),
   sumReopened: document.getElementById("sumReopened"),
   sumNewIssue: document.getElementById("sumNewIssue"),
-  sumTransferOut: document.getElementById("sumTransferOut"),
   sumNet: document.getElementById("sumNet"),
   reopenedTableBody: document.querySelector("#reopenedTable tbody"),
   newIssueTableBody: document.querySelector("#newIssueTable tbody"),
-  transferOutTableBody: document.querySelector("#transferOutTable tbody"),
   csvExport: document.getElementById("csvExport"),
   xlsxExport: document.getElementById("xlsxExport"),
   pngExport: document.getElementById("pngExport"),
@@ -110,7 +107,7 @@ function renderCards(columns, cards) {
           <p>优先级: ${card.priority}</p>
           <p>创建: ${card.timeline.created_at || "-"}</p>
           <p>产品分配: ${card.timeline.product_assigned_at || "-"} ${card.timeline.product_assigned_to ? `(${card.timeline.product_assigned_to})` : ""}</p>
-          <p>开发经理分配: ${card.timeline.dev_manager_assigned_at || "-"} ${card.timeline.dev_manager_assigned_from || card.timeline.dev_manager_assigned_to ? `(${card.timeline.dev_manager_assigned_from || "-"} → ${card.timeline.dev_manager_assigned_to || "-"})` : ""}</p>
+          <p>开发经理分配: ${card.timeline.dev_manager_assigned_at || "-"} ${card.timeline.dev_manager_assigned_to ? `(${card.timeline.dev_manager_assigned_to})` : ""}</p>
           <p>开发开始: ${card.timeline.developer_started_at || "-"}</p>
           <p>审核开始: ${card.timeline.review_at || "-"}</p>
           <p>解决: ${card.timeline.resolved_at || "-"}</p>
@@ -124,137 +121,37 @@ function renderCards(columns, cards) {
 }
 
 function renderMetrics(metrics) {
-  elements.metricsGroups.innerHTML = "";
-  const teamMap = new Map();
+  elements.metricsBody.innerHTML = "";
   metrics.forEach((row) => {
-    const teamName = row.team_name || "其他团队";
-    if (!teamMap.has(teamName)) {
-      teamMap.set(teamName, []);
-    }
-    teamMap.get(teamName).push(row);
-  });
-
-  const orderedTeamNames = Array.from(teamMap.keys()).sort((left, right) => {
-    if (left === "其他团队" && right !== "其他团队") {
-      return 1;
-    }
-    if (left !== "其他团队" && right === "其他团队") {
-      return -1;
-    }
-    return left.localeCompare(right, "zh-CN");
-  });
-
-  orderedTeamNames.forEach((teamName) => {
-    const rows = teamMap.get(teamName) || [];
-    const section = document.createElement("div");
-    section.className = "metrics-group";
-
-    const title = document.createElement("h4");
-    title.textContent = `团队：${teamName}`;
-    section.appendChild(title);
-
-    const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>成员</th>
-          <th>总数</th>
-          <th>已解决</th>
-          <th>已解决Issue</th>
-          <th>解决率</th>
-          <th>WIP</th>
-          <th>平均LeadTime(小时)</th>
-          <th>加权进度</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.assignee}</td>
+      <td>${row.total}</td>
+      <td>${row.resolved}</td>
+      <td>${row.resolution_rate}%</td>
+      <td>${row.wip}</td>
+      <td>${row.avg_lead_time_hours ?? "-"}</td>
+      <td>${row.weighted_progress}%</td>
     `;
-    const tbody = table.querySelector("tbody");
-
-    rows.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row.assignee}</td>
-        <td>${row.total}</td>
-        <td>${row.resolved}</td>
-        <td>${(row.resolved_issue_keys || []).join(", ") || "-"}</td>
-        <td>${row.resolution_rate}%</td>
-        <td>${row.wip}</td>
-        <td>${row.avg_lead_time_hours ?? "-"}</td>
-        <td>${row.weighted_progress}%</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    const subtotalTotal = rows.reduce((sum, row) => sum + Number(row.total || 0), 0);
-    const subtotalResolved = rows.reduce((sum, row) => sum + Number(row.resolved || 0), 0);
-    const subtotalWip = rows.reduce((sum, row) => sum + Number(row.wip || 0), 0);
-    const resolutionRate = subtotalTotal ? ((subtotalResolved / subtotalTotal) * 100).toFixed(2) : "0.00";
-
-    const leadNumerator = rows.reduce((sum, row) => {
-      if (row.avg_lead_time_hours == null) {
-        return sum;
-      }
-      return sum + Number(row.avg_lead_time_hours) * Number(row.total || 0);
-    }, 0);
-    const leadDenominator = rows.reduce((sum, row) => {
-      if (row.avg_lead_time_hours == null) {
-        return sum;
-      }
-      return sum + Number(row.total || 0);
-    }, 0);
-    const avgLead = leadDenominator ? (leadNumerator / leadDenominator).toFixed(2) : "-";
-
-    const subtotalRow = document.createElement("tr");
-    subtotalRow.className = "metrics-subtotal";
-    subtotalRow.innerHTML = `
-      <td>小计</td>
-      <td>${subtotalTotal}</td>
-      <td>${subtotalResolved}</td>
-      <td>-</td>
-      <td>${resolutionRate}%</td>
-      <td>${subtotalWip}</td>
-      <td>${avgLead}</td>
-      <td>-</td>
-    `;
-    tbody.appendChild(subtotalRow);
-
-    section.appendChild(table);
-    elements.metricsGroups.appendChild(section);
+    elements.metricsBody.appendChild(tr);
   });
 }
 
 function renderSummary(kanbanData) {
   const summary = kanbanData.manager_summary_cards || {};
-  const issueKeys = kanbanData.manager_summary_issue_keys || {};
   elements.sumAssigned.textContent = summary.assigned_total ?? "-";
   elements.sumResolved.textContent = summary.resolved_total ?? "-";
   elements.sumUnresolved.textContent = summary.unresolved_total ?? "-";
   elements.sumReopened.textContent = summary.reopened_event_total ?? "-";
   elements.sumNewIssue.textContent = summary.new_issue_total ?? "-";
-  const transferIssue = summary.transfer_out_issue_total ?? 0;
-  const transferEvent = summary.transfer_out_event_total ?? 0;
-  elements.sumTransferOut.textContent = `${transferIssue}个问题 / ${transferEvent}次`;
   elements.sumNet.textContent = summary.net_change ?? "-";
   elements.summaryText.value = kanbanData.manager_summary_text || "";
-
-  const formatIssueLine = (label, keys) => `${label}: ${(keys || []).join(", ") || "-"}`;
-  elements.summaryIssueKeys.textContent = [
-    "问题号明细",
-    formatIssueLine("本周期分配", issueKeys.assigned),
-    formatIssueLine("本周期已解决", issueKeys.resolved),
-    formatIssueLine("本周期未解决", issueKeys.unresolved),
-    formatIssueLine("重开事件", issueKeys.reopened),
-    formatIssueLine("New Issue", issueKeys.new_issue),
-    formatIssueLine("评估后转出", issueKeys.transfer_out),
-  ].join("\n");
 }
 
 function renderFocus(kanbanData) {
   const focus = kanbanData.period_focus || {};
   const reopenedItems = focus.reopened?.items || [];
   const newIssueItems = focus.new_issue?.items || [];
-  const transferTeams = focus.transfer_out?.teams || [];
 
   elements.reopenedTableBody.innerHTML = "";
   reopenedItems.forEach((item) => {
@@ -278,23 +175,6 @@ function renderFocus(kanbanData) {
       <td>${item.status || "-"}</td>
     `;
     elements.newIssueTableBody.appendChild(tr);
-  });
-
-  elements.transferOutTableBody.innerHTML = "";
-  transferTeams.forEach((team) => {
-    const teamName = team.team_name || team.team_id || "-";
-    const transferItems = team.items || [];
-    transferItems.forEach((item) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><a href="${item.url || "#"}" target="_blank">${item.key || "-"}</a></td>
-        <td>${teamName}</td>
-        <td>${item.from || "-"} → ${item.to || "-"}</td>
-        <td>${item.event_count ?? 0}</td>
-        <td>${item.latest_transfer_out_at || "-"}</td>
-      `;
-      elements.transferOutTableBody.appendChild(tr);
-    });
   });
 }
 

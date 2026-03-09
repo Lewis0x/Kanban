@@ -9,42 +9,6 @@ import yaml
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "jira_auth.yaml"
 
 
-def _normalize_user_list(values: list[Any] | None) -> list[str]:
-    return [str(item).strip() for item in (values or []) if str(item).strip()]
-
-
-def _normalize_teams(raw_teams: Any) -> list[dict[str, Any]]:
-    if not isinstance(raw_teams, list):
-        return []
-
-    teams: list[dict[str, Any]] = []
-    for index, raw_team in enumerate(raw_teams):
-        if not isinstance(raw_team, dict):
-            continue
-
-        team_id = str(raw_team.get("id") or "").strip()
-        team_name = str(raw_team.get("name") or "").strip()
-        owner = str(raw_team.get("owner") or "").strip()
-        members = _normalize_user_list(raw_team.get("members"))
-
-        if not team_id:
-            if team_name:
-                team_id = team_name
-            else:
-                team_id = f"team_{index + 1}"
-
-        teams.append(
-            {
-                "id": team_id,
-                "name": team_name or team_id,
-                "owner": owner,
-                "members": members,
-            }
-        )
-
-    return teams
-
-
 def load_config(config_path: str | None = None) -> dict[str, Any]:
     path = Path(config_path) if config_path else DEFAULT_CONFIG_PATH
     if not path.exists():
@@ -63,7 +27,6 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
     default_filter_id = filter_settings.get("default_filter_id")
     status_mapping = content.get("status_mapping") or {}
     role_settings = content.get("role_settings") or {}
-    teams = _normalize_teams(content.get("teams"))
 
     return {
         "base_url": str(content["base_url"]).rstrip("/"),
@@ -73,12 +36,12 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
         "request_timeout_seconds": int(content.get("request_timeout_seconds", 30)),
         "jql_filters": [item.strip() for item in content.get("jql_filters", []) if str(item).strip()],
         "status_mapping": {
-            "todo": _normalize_user_list(status_mapping.get("todo")),
+            "todo": [str(item).strip() for item in (status_mapping.get("todo") or []) if str(item).strip()],
             "in_progress": [
                 str(item).strip() for item in (status_mapping.get("in_progress") or []) if str(item).strip()
             ],
-            "review": _normalize_user_list(status_mapping.get("review")),
-            "done": _normalize_user_list(status_mapping.get("done")),
+            "review": [str(item).strip() for item in (status_mapping.get("review") or []) if str(item).strip()],
+            "done": [str(item).strip() for item in (status_mapping.get("done") or []) if str(item).strip()],
         },
         "role_settings": {
             "product_manager_roles": [
@@ -98,5 +61,4 @@ def load_config(config_path: str | None = None) -> dict[str, Any]:
             "allowed_filter_ids": [str(item).strip() for item in allowed_filter_ids if str(item).strip()],
             "default_filter_id": str(default_filter_id).strip() if str(default_filter_id).strip() else None,
         },
-        "teams": teams,
     }

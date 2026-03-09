@@ -5,25 +5,6 @@ def test_cached_queries_route(client):
     assert "queries" in payload
 
 
-def test_cache_sources_route(client):
-    warm = client.post("/api/query?confirmed=true")
-    assert warm.status_code == 200
-    response = client.get("/api/cache_sources")
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert "sources" in payload
-
-
-def test_team_issue_history_route(client):
-    warm = client.post("/api/query?confirmed=true")
-    assert warm.status_code == 200
-    response = client.get("/api/history/team_issues")
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert "queries" in payload
-    assert payload["query_count"] >= 1
-
-
 def test_query_route(client):
     response = client.post("/api/query?confirmed=true")
     assert response.status_code == 200
@@ -45,19 +26,10 @@ def test_kanban_route_returns_columns(client):
     assert "columns" in payload
     assert "metrics" in payload
     assert "jql_preview" in payload
+    assert "summary_window" in payload
     assert "manager_summary_cards" in payload
+    assert "manager_summary_text" in payload
     assert "period_focus" in payload
-
-
-def test_kanban_route_returns_assignment_debug_when_enabled(client):
-    warm = client.post("/api/query?confirmed=true")
-    assert warm.status_code == 200
-    response = client.get("/api/kanban?debug_assignment=true")
-    assert response.status_code == 200
-    payload = response.get_json()
-    assert "assignment_debug" in payload
-    assert "window" in payload["assignment_debug"]
-    assert "rows" in payload["assignment_debug"]
 
 
 def test_gantt_route_mode_validation(client):
@@ -81,3 +53,12 @@ def test_query_and_build_separated(client, fake_jira):
     gantt = client.get("/api/gantt")
     assert gantt.status_code == 200
     assert fake_jira.query_calls == 1
+
+
+def test_kanban_supports_custom_window(client):
+    warm = client.post("/api/query?confirmed=true")
+    assert warm.status_code == 200
+    response = client.get("/api/kanban?window=weekly&start=2026-02-01T00:00:00Z&end=2026-02-28T00:00:00Z")
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["summary_window"]["mode"] == "custom"

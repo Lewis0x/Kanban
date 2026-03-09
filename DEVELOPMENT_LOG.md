@@ -1,5 +1,21 @@
 # 开发文档 — Jira Sprint Kanban
 
+## 0. 最新迭代（2026-03-09）
+- 修复“周期总结全部为 0”问题：
+  - 根因：JIRA 时间戳为 `+0800`（无冒号），Python 3.10 `datetime.fromisoformat` 无法直接解析，导致窗口判断全部失效。
+  - 处理：`app/normalize.py::parse_datetime` 增加时区预处理，将 `+0800` 规范化为 `+08:00` 后再解析。
+- 调整周期总结口径（按评审确认）：
+  - `本周期分配`：改为统计 `dev_manager_assigned_at` 落在周期窗口内的问题数。
+  - `本周期未解决`：改为“本周期内被开发经理分配且当前未解决”的问题数。
+  - `本周期解决`：按 issue 最后一次进入 done 的时间统计（支持“重开后再次解决”场景）。
+- 调整 `resolved_at` 提取策略：
+  - 由“首次进入 done 时间”改为“最后一次进入 done 时间”。
+  - 对当前状态属于 done 但历史缺失场景，仍保留 `resolutiondate` 与状态回退逻辑。
+- 测试更新：
+  - 新增 `parse_datetime` 对 `+0800` / `+08:00` / `Z` 三种格式解析用例。
+  - 新增“多次解决取最后一次”相关用例（分析层与归一化层）。
+  - 本地全量回归：`36 passed`。
+
 ## 0. 最新迭代（2026-02-25）
 - 完成 A 方案界面重构（单页分区）：
   - 顶部状态栏：数据源状态、最近刷新时间、刷新与导出入口
@@ -80,10 +96,10 @@
 ## 5. 关键业务规则
 
 ### 5.1 解决时间（resolved_at）
-“状态调整到 `status_mapping.done` 中任一状态，即视为解决时间”。
+“状态调整到 `status_mapping.done` 中任一状态，即视为解决时间；若存在多次进入 done，以最后一次为准”。
 
 解析优先级：
-1. changelog 中首次进入 done 状态的时间。
+1. changelog 中最后一次进入 done 状态的时间。
 2. 若无，且当前状态属于 done：使用 `fields.resolutiondate`。
 3. 若仍无：使用最后一次状态变更时间（仅当前状态属于 done 时）。
 
@@ -122,7 +138,7 @@
   - `tests/test_normalize.py`
   - `tests/test_metrics.py`
   - `tests/test_routes.py`
-- 最近一次相关回归：通过（本地执行）。
+- 最近一次相关回归：`36 passed`（本地执行）。
 
 ## 8. 已知限制
 - 历史缓存可能缺少 `resolutiondate`，已通过多级回退补偿，但精度依赖 changelog 完整性。
