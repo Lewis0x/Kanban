@@ -18,6 +18,8 @@ class JiraConfig:
     verify_ssl: bool = True
     timeout_seconds: int = 30
     jql_filters: list[str] | None = None
+    # 仅填写 customfield_xxx；同步 issue 时附加到 fields（不发起 /field 等额外请求）
+    task_owner_field: str | None = None
 
 
 class JiraClient:
@@ -67,12 +69,20 @@ class JiraClient:
         max_results = 50
         search_jql = self.build_search_jql(jql=jql)
         while True:
+            base_fields = (
+                "summary,status,priority,assignee,created,updated,resolutiondate,description,issuetype,sprint"
+            )
+            fields_param = base_fields
+            extra = (self.config.task_owner_field or "").strip()
+            if extra:
+                fields_param = f"{base_fields},{extra}"
+
             params: dict[str, Any] = {
                 "startAt": start_at,
                 "maxResults": max_results,
                 "expand": "changelog",
                 "jql": search_jql,
-                "fields": "summary,status,priority,assignee,created,updated,resolutiondate,description,issuetype,sprint",
+                "fields": fields_param,
             }
 
             data = self._request("GET", "/rest/api/2/search", params=params)

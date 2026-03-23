@@ -24,7 +24,11 @@ def _hours_between(start: str | None, end: str | None) -> float | None:
     return delta.total_seconds() / 3600
 
 
-def compute_member_metrics(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def compute_member_metrics(
+    cards: list[dict[str, Any]],
+    exclude_roles: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    _exclude = {name.strip().lower() for name in (exclude_roles or set()) if name}
     grouped: dict[str, list[dict[str, Any]]] = {}
     for card in cards:
         owner = str(card.get("metric_owner") or card.get("assignee") or "Unassigned")
@@ -32,6 +36,8 @@ def compute_member_metrics(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     rows: list[dict[str, Any]] = []
     for assignee, items in grouped.items():
+        if _exclude and assignee.strip().lower() in _exclude:
+            continue
         total = len(items)
         resolved = len([item for item in items if item["column"] == "Done"])
         wip = len([item for item in items if item["column"] in {"In Progress", "审核中"}])

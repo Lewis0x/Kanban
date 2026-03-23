@@ -22,8 +22,13 @@ status_mapping:
     - Resolved
     - Closed
     - 已关闭
+    - 已解决
     - 测试中
     - 主干已解决
+# Task Owner 自定义字段：填写 Jira REST 字段 id，如 customfield_12345，或纯数字 12345
+# 仅在手动同步 Jira 时随 search 拉取；看板读缓存不额外请求 Jira
+# task_owner_field: customfield_12345
+
 role_settings:
   product_manager_roles:
     - humeng

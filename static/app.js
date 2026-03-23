@@ -97,13 +97,15 @@ function renderCards(columns, cards) {
     (columns[name] || []).forEach((card) => {
       const node = document.createElement("div");
       node.className = "card";
-      node.innerHTML = `<strong>${card.key}</strong><div>${card.summary}</div><small>${card.assignee} | ${card.priority}</small>`;
+      const owner = card.metric_owner || card.assignee;
+      node.innerHTML = `<strong>${card.key}</strong><div>${card.summary}</div><small>${owner} | ${card.priority}</small>`;
       node.onclick = () => {
         elements.details.innerHTML = `
           <h3>${card.key}</h3>
           <p>${card.summary}</p>
           <p>状态: ${card.status}</p>
-          <p>负责人: ${card.assignee}</p>
+          <p>任务负责人: ${card.metric_owner || card.assignee}</p>
+          <p>Jira 经办人: ${card.assignee}</p>
           <p>优先级: ${card.priority}</p>
           <p>创建: ${card.timeline.created_at || "-"}</p>
           <p>产品分配: ${card.timeline.product_assigned_at || "-"} ${card.timeline.product_assigned_to ? `(${card.timeline.product_assigned_to})` : ""}</p>
@@ -146,6 +148,9 @@ function renderSummary(kanbanData) {
   elements.sumNewIssue.textContent = summary.new_issue_total ?? "-";
   elements.sumNet.textContent = summary.net_change ?? "-";
   elements.summaryText.value = kanbanData.manager_summary_text || "";
+  // auto-resize textarea to fit content
+  elements.summaryText.style.height = "auto";
+  elements.summaryText.style.height = elements.summaryText.scrollHeight + "px";
 }
 
 function renderFocus(kanbanData) {

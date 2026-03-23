@@ -22,6 +22,9 @@ htmlcov/
 # Config (contains credentials)
 config/jira_auth.yaml
 
+# Jira 查询缓存（本地生成，勿入库）
+storage/jira_query_cache/
+
 # OS
 Thumbs.db
 .DS_Store

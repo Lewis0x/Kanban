@@ -41,6 +41,7 @@ def create_app(config_path: str | None = None, jira_client: JiraClient | None = 
                 verify_ssl=resolved_cfg["verify_ssl"],
                 timeout_seconds=resolved_cfg["request_timeout_seconds"],
                 jql_filters=resolved_cfg.get("jql_filters", []),
+                task_owner_field=(resolved_cfg.get("task_owner_field") or None),
             )
         )
 
@@ -197,8 +198,15 @@ def create_app(config_path: str | None = None, jira_client: JiraClient | None = 
         base_url = (runtime_cfg or {}).get("base_url") or "https://jira.local"
         status_mapping = (runtime_cfg or {}).get("status_mapping")
         role_settings = (runtime_cfg or {}).get("role_settings")
+        task_owner_field = (runtime_cfg or {}).get("task_owner_field")
         cards = [
-            normalize_issue(issue, base_url=base_url, status_mapping=status_mapping, role_settings=role_settings)
+            normalize_issue(
+                issue,
+                base_url=base_url,
+                status_mapping=status_mapping,
+                role_settings=role_settings,
+                task_owner_field=task_owner_field,
+            )
             for issue in issues
         ]
         cache_source = str(cache_file.relative_to(Path(__file__).resolve().parent.parent)).replace("\\", "/")
@@ -275,10 +283,14 @@ def create_app(config_path: str | None = None, jira_client: JiraClient | None = 
             return jsonify({"error": str(error)}), 502
 
         columns = split_columns(cards)
-        metrics = compute_member_metrics(cards)
+        runtime_cfg_board = get_runtime_config() or {}
+        quality_names = set((runtime_cfg_board.get("role_settings") or {}).get("quality_roles") or [])
+        metrics = compute_member_metrics(cards, exclude_roles=quality_names)
         window = resolve_period_window(window_mode, window_start, window_end, cards=cards)
         summary = build_manager_summary(cards, window)
-        assignees = sorted({card["assignee"] for card in cards})
+        assignees = sorted(
+            {name for card in cards for name in (card["assignee"], card.get("metric_owner")) if name}
+        )
         priorities = sorted({card["priority"] for card in cards})
 
         return jsonify(
@@ -393,7 +405,9 @@ def create_app(config_path: str | None = None, jira_client: JiraClient | None = 
             )
         except FileNotFoundError:
             return jsonify({"error": "No local query cache found. Call /api/query first."}), 409
-        metrics = compute_member_metrics(cards)
+        runtime_cfg_export = get_runtime_config() or {}
+        quality_names_export = set((runtime_cfg_export.get("role_settings") or {}).get("quality_roles") or [])
+        metrics = compute_member_metrics(cards, exclude_roles=quality_names_export)
 
         workbook = Workbook()
         details = workbook.active

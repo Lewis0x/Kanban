@@ -1,0 +1,51 @@
+# =============================================================================
+# 周期总结 — 可复制文本模板（manager_summary_text）
+# =============================================================================
+# 修改本文件后，重启 Flask 即可生效（无需改 Python 代码）。
+#
+# 占位符说明：
+#   overview（总览一行）
+#     {label} 周期标签
+#     {assigned_total} {resolved_total} {unresolved_total} 数字
+#     {reopened_events} 重开「事件」次数（非问题数）
+#     {new_issue_total} {net_change} 数字；{net_change} 已带正负号，如 +1、-2
+#
+#   section_* 区块标题
+#     {resolved_total} {unresolved_total} {reopened_events}
+#     {reopened_issue_count} 重开涉及的问题个数
+#     {new_issue_total}
+#
+#   owner_group（未解决等：仅按负责人分组时的组标题）
+#     {owner} {count}
+#
+#   已解决两级分组
+#     resolved_status_group：第一级按 Jira 状态
+#       {status} {count}
+#     resolved_owner_group：第二级按负责人（metric_owner / assignee）
+#       {owner} {count}
+#
+#   item_* 单行 issue；摘要/状态等若含 { 或 } 会自动转义，一般无需处理
+#     {key} {summary} {status} {owner} {reopen_count}
+#
+# 在模板中要输出字面量花括号时，请写双花括号：{{ 与 }}
+# =============================================================================
+
+strings:
+  overview: >-
+    {label}：分配到开发 {assigned_total} 个，已解决 {resolved_total} 个，
+    未解决 {unresolved_total} 个，重开事件 {reopened_events} 次，
+    新引入问题 {new_issue_total} 个，净变化 {net_change} 个。
+
+  section_resolved: "【已解决问题 ({resolved_total})】"
+  section_unresolved: "【未解决问题 ({unresolved_total})】"
+  section_reopened: "【重开事件 ({reopened_events} 次，涉及 {reopened_issue_count} 个问题)】"
+  section_new_issue: "【新引入问题 ({new_issue_total})】"
+
+  owner_group: "  {owner} ({count})："
+
+  resolved_status_group: "  【{status}】（{count}）"
+  resolved_owner_group: "    {owner} ({count})："
+  item_resolved: "      - {key}  {summary}"
+  item_unresolved: "    - {key}  {summary}  [{status}]"
+  item_reopened: "  - {key}  {summary}  重开{reopen_count}次  [{owner}]"
+  item_new_issue: "  - {key}  {summary}  [{status}]  [{owner}]"

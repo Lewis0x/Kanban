@@ -11,7 +11,7 @@ _TZ_NO_COLON = re.compile(r'([+-])(\d{2})(\d{2})$')
 TODO_STATES = {"to do", "open", "backlog", "selected for development"}
 IN_PROGRESS_STATES = {"in progress", "development", "testing"}
 REVIEW_STATES = {"in review", "code review", "reviewing", "审核中"}
-DONE_STATES = {"done", "resolved", "closed"}
+DONE_STATES = {"done", "resolved", "closed", "已解决"}
 
 
 def build_status_groups(status_mapping: dict[str, list[str]] | None = None) -> dict[str, set[str]]:
@@ -58,6 +58,62 @@ def build_role_groups(role_settings: dict[str, list[str]] | None = None) -> dict
     }
 
 
+def _extract_task_owner_display(fields: dict[str, Any], field_id: str | None) -> str | None:
+    """从 Jira 自定义字段（用户选择器等）解析展示名；field_id 如 customfield_10400。"""
+    if not field_id or not str(field_id).strip():
+        return None
+    fid = str(field_id).strip()
+    raw = fields.get(fid)
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        name = (raw.get("displayName") or raw.get("name") or "").strip()
+        return name or None
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    if isinstance(raw, list) and raw:
+        first = raw[0]
+        if isinstance(first, dict):
+            name = (first.get("displayName") or first.get("name") or "").strip()
+            return name or None
+        if isinstance(first, str) and first.strip():
+            return first.strip()
+    return None
+
+
+def _is_task_owner_changelog_field(field_name: str) -> bool:
+    """Jira changelog 里自定义字段的 `field` 可能是英文名或实例本地化名（如中文）。"""
+    n = (field_name or "").strip()
+    if not n:
+        return False
+    if n.lower() == "task owner":
+        return True
+    # 部分 Jira 实例在 changelog 中使用中文显示名，与 REST fields 的 customfield 无关
+    if n == "任务负责人":
+        return True
+    return False
+
+
+def _extract_latest_task_owner_from_changelog(issue: dict[str, Any]) -> str | None:
+    """从 changelog 中按时间顺序取 Task Owner / 任务负责人 的当前值（最后一次变更后的结果）。"""
+    histories = issue.get("changelog", {}).get("histories", [])
+    if not histories:
+        return None
+    sorted_histories = sorted(histories, key=lambda row: row.get("created", "") or "")
+    current: str | None = None
+    for history in sorted_histories:
+        for item in history.get("items", []):
+            fname = (item.get("field") or "").strip()
+            if not _is_task_owner_changelog_field(fname):
+                continue
+            to_display = (item.get("toString") or item.get("to") or "").strip()
+            if to_display in ("", "-"):
+                current = None
+            else:
+                current = to_display
+    return current
+
+
 def _derive_metric_owner(
     issue: dict[str, Any],
     assignee_name: str,
@@ -66,6 +122,7 @@ def _derive_metric_owner(
 ) -> str:
     role_groups = build_role_groups(role_settings)
     pm_roles = role_groups["product_manager_roles"]
+    dm_roles = role_groups["dev_manager_roles"]
     developer_roles = role_groups["developer_roles"]
     quality_roles = role_groups["quality_roles"]
 
@@ -92,6 +149,24 @@ def _derive_metric_owner(
             matched_developer = find_last_assignee(developer_roles)
             if matched_developer:
                 return matched_developer
+
+        # developer_roles not configured or no match — fall back to the last
+        # assignee who is not in any management / QA role (i.e. the developer).
+        non_dev_roles = quality_roles | pm_roles | dm_roles
+        histories = issue.get("changelog", {}).get("histories", [])
+        sorted_histories = sorted(histories, key=lambda row: row.get("created", ""), reverse=True)
+        for history in sorted_histories:
+            for item in history.get("items", []):
+                if (item.get("field") or "").lower() != "assignee":
+                    continue
+                to_login = (item.get("to") or "").strip()
+                to_display = (item.get("toString") or item.get("to") or "").strip()
+                if not to_display:
+                    continue
+                candidates = {to_display.lower(), to_login.lower()}
+                if not candidates.intersection(non_dev_roles):
+                    return to_display
+
         return assignee_name
 
     if not pm_roles:
@@ -135,7 +210,13 @@ def parse_datetime(value: str | None) -> datetime | None:
         return None
 
 
-def determine_column(status_name: str | None, status_groups: dict[str, set[str]] | None = None) -> str:
+def determine_column(
+    status_name: str | None,
+    status_groups: dict[str, set[str]] | None = None,
+    *,
+    resolution_date: str | None = None,
+) -> str:
+    """划分看板列。若状态名未出现在 status_mapping 任一列，但 Jira 已填写 resolutiondate，则视为已解决 → Done。"""
     groups = status_groups or build_status_groups()
     normalized = (status_name or "").strip().lower()
     if normalized in groups["done"]:
@@ -146,6 +227,8 @@ def determine_column(status_name: str | None, status_groups: dict[str, set[str]]
         return "In Progress"
     if normalized in groups["todo"]:
         return "To Do"
+    if resolution_date:
+        return "Done"
     return "To Do"
 
 
@@ -217,7 +300,14 @@ def extract_timeline(
                     timeline["review_at"] = changed_at
                 if to_string in groups["done"]:
                     timeline["resolved_at"] = changed_at
-                if not timeline["closed_at"] and to_string == "closed":
+                # 「已关闭 / Closed」单独记时点，供周期总结：解决与关闭分步时仍可按关闭时间入总结
+                raw_disp = (item.get("toString") or "").strip()
+                rl = raw_disp.lower()
+                if to_string in groups["done"] and (
+                    rl == "closed"
+                    or raw_disp == "已关闭"
+                    or "已关闭" in raw_disp
+                ):
                     timeline["closed_at"] = changed_at
                 if from_string in groups["done"] and to_string and to_string not in groups["done"] and changed_at:
                     timeline["reopened_events"].append(changed_at)
@@ -246,6 +336,14 @@ def extract_timeline(
                         timeline["resolved_at"] = changed_at
                         break
 
+    if not timeline["resolved_at"] and fields.get("resolutiondate"):
+        timeline["resolved_at"] = fields.get("resolutiondate")
+
+    if not timeline["closed_at"]:
+        st_name = (fields.get("status", {}) or {}).get("name") or ""
+        if "已关闭" in st_name or st_name.strip().lower() == "closed":
+            timeline["closed_at"] = timeline.get("resolved_at") or fields.get("resolutiondate")
+
     return timeline
 
 
@@ -254,6 +352,7 @@ def normalize_issue(
     base_url: str,
     status_mapping: dict[str, list[str]] | None = None,
     role_settings: dict[str, list[str]] | None = None,
+    task_owner_field: str | None = None,
 ) -> dict[str, Any]:
     status_groups = build_status_groups(status_mapping)
     fields = issue.get("fields", {})
@@ -263,15 +362,25 @@ def normalize_issue(
     assignee_name = assignee.get("displayName") or "Unassigned"
     assignee_login = assignee.get("name") or assignee.get("key") or ""
     metric_owner = _derive_metric_owner(issue, assignee_name=assignee_name, assignee_login=assignee_login, role_settings=role_settings)
+    task_owner = _extract_task_owner_display(fields, task_owner_field)
+    if not task_owner:
+        task_owner = _extract_latest_task_owner_from_changelog(issue)
+    if task_owner:
+        metric_owner = task_owner
 
     timeline = extract_timeline(issue, status_groups=status_groups, role_settings=role_settings)
     return {
         "key": issue.get("key"),
         "summary": fields.get("summary", ""),
         "status": status_name,
-        "column": determine_column(status_name, status_groups=status_groups),
+        "column": determine_column(
+            status_name,
+            status_groups=status_groups,
+            resolution_date=fields.get("resolutiondate"),
+        ),
         "assignee": assignee_name,
         "metric_owner": metric_owner,
+        "task_owner": task_owner,
         "priority": priority_name,
         "issue_type": fields.get("issuetype", {}).get("name", "Unknown"),
         "description": fields.get("description") or "",
@@ -289,7 +398,10 @@ def filter_cards(
 ) -> list[dict[str, Any]]:
     output = cards
     if assignee:
-        output = [card for card in output if card["assignee"] == assignee]
+        output = [
+            card for card in output
+            if card["assignee"] == assignee or card.get("metric_owner") == assignee
+        ]
     if priority:
         output = [card for card in output if card["priority"] == priority]
     if keyword:
