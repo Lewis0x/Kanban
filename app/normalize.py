@@ -363,8 +363,15 @@ def normalize_issue(
     assignee_login = assignee.get("name") or assignee.get("key") or ""
     metric_owner = _derive_metric_owner(issue, assignee_name=assignee_name, assignee_login=assignee_login, role_settings=role_settings)
     task_owner = _extract_task_owner_display(fields, task_owner_field)
-    if not task_owner:
+    task_owner_source: str | None = None
+    task_owner_jira_field: str | None = None
+    if task_owner:
+        task_owner_source = "jira_field"
+        task_owner_jira_field = (str(task_owner_field).strip() if task_owner_field else None) or None
+    else:
         task_owner = _extract_latest_task_owner_from_changelog(issue)
+        if task_owner:
+            task_owner_source = "changelog"
     if task_owner:
         metric_owner = task_owner
 
@@ -381,6 +388,8 @@ def normalize_issue(
         "assignee": assignee_name,
         "metric_owner": metric_owner,
         "task_owner": task_owner,
+        "task_owner_source": task_owner_source,
+        "task_owner_jira_field": task_owner_jira_field,
         "priority": priority_name,
         "issue_type": fields.get("issuetype", {}).get("name", "Unknown"),
         "description": fields.get("description") or "",

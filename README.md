@@ -18,6 +18,19 @@
 - 脚本会自动创建 `.venv`、安装依赖并启动 Flask（`http://127.0.0.1:5000`）。
 - 首次使用仍需按下方说明配置 `config/jira_auth.yaml`。
 
+### 缓存汇总（按任务负责人）
+
+从**当前已同步的本地缓存**生成报告：Issue 总数、按看板 **任务负责人**（`metric_owner`）分组的问题明细（key / 状态 / 列 / 经办人 / 优先级 / 摘要 / 链接）。默认使用 `storage/jira_query_cache/` 下**修改时间最新**的 JSON。
+
+```powershell
+cd Lewis\Kanban   # 或你的 Kanban 根目录
+.\.venv\Scripts\python.exe scripts\summarize_jira_cache.py
+.\.venv\Scripts\python.exe scripts\summarize_jira_cache.py --json --out owner_summary.json
+.\.venv\Scripts\python.exe scripts\summarize_jira_cache.py --cache-id <64位缓存id>
+```
+
+控制台中文乱码时可加：`chcp 65001`，或始终用 `--out report.txt` 再用编辑器打开。
+
 ### 手动启动
 
 ```powershell
@@ -53,7 +66,7 @@ copy config\jira_auth.example.yaml config\jira_auth.yaml
 | **1. 拉取 Issue** | `app/jira_client.py` | 同步时若配置了 `task_owner_field`（已规范为 `customfield_*`），将其**追加**到 `search` 的 `fields`；否则不请求任何自定义字段。 |
 | **2. Task Owner 自定义字段** | `app/normalize.py` → `_extract_task_owner_display` | 读 `fields[task_owner_field]`：① **dict**（用户选择器）→ `displayName`，否则 `name`；② **非空字符串**→ 原样；③ **非空 list**→ 取第一个元素按 ①/② 解析。 |
 | **2b. Task Owner 回退（changelog）** | `app/normalize.py` → `_extract_latest_task_owner_from_changelog` | 若上一步未解析到值：按 **`histories[].created` 时间正序**扫描 `items`，匹配 **`field` 名为 `Task Owner`（忽略大小写）或 `任务负责人`** 的变更；每次用 `toString`，否则 `to`；**空字符串或 `-` 视为清空**。取**最后一次变更后的结果**作为 `task_owner`（与 Jira 当前逻辑一致时可替代未请求的 `customfield_*`）。 |
-| **3. 覆盖 metric_owner** | `app/normalize.py` → `normalize_issue` | 若 **`task_owner` 有值**，则 **`metric_owner = task_owner`**，**不再**用经办人推导。 |
+| **3. 覆盖 metric_owner** | `app/normalize.py` → `normalize_issue` | 若 **`task_owner` 有值**，则 **`metric_owner = task_owner`**，**不再**用经办人推导。卡片上同时带 **`task_owner_source`**：`jira_field`（来自 `fields[customfield_*]`）或 `changelog`；无 Task Owner 时为 `null`，此时 **`metric_owner`** 仅来自经办人推导。 |
 | **4. 经办人推导（无 Task Owner 时）** | `app/normalize.py` → `_derive_metric_owner` | 用 `assignee.displayName`、`assignee.name`（login）与 `role_settings` 做集合匹配（**全部转小写**后比较，中文名不变）。 |
 | **4a. 当前经办人 ∈ `quality_roles`** | 同上 | 若配置了 **`developer_roles`**：在 changelog 中按**时间倒序**找第一条 `assignee` 变更，其 `toString`/`to` 与 **`developer_roles`** 有交集 → 返回该 `toString`。否则在 changelog 倒序中找第一个「经办人 ∉ (产品∪开发经理∪测试)」→ 返回；否则返回当前经办人显示名。 |
 | **4b. 未配置 `product_manager_roles`** | 同上 | **直接返回**当前经办人显示名。 |

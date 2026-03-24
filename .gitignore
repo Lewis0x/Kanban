@@ -25,6 +25,9 @@ config/jira_auth.yaml
 # Jira 查询缓存（本地生成，勿入库）
 storage/jira_query_cache/
 
+# 缓存汇总报告（scripts/summarize_jira_cache.py 生成）
+storage/cache_owner_summary*.txt
+
 # OS
 Thumbs.db
 .DS_Store

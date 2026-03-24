@@ -21,6 +21,27 @@
 - 新增 / 更新：`parse_datetime`、`resolved_at` 多次解决、Task Owner changelog（含中文字段名）等用例；移除已无对应实现的 `tests/test_jira_client.py`。
 - 本地全量回归：**52 passed**。
 
+### 2026-03-24
+
+**Task Owner 来源字段**
+
+- `normalize_issue` 返回值增加 **`task_owner_source`**（`jira_field` / `changelog` / `null`）与 **`task_owner_jira_field`**（仅字段快照时，REST 的 `customfield_*` id），便于与 Jira 对账。
+- 缓存汇总文本/JSON 中每条 issue 附带 **`task_owner_provenance`** 中文说明（Jira 字段、changelog 或经办人推导）。
+
+**离线汇总脚本**
+
+- 新增 `app/cache_summary.py`（分组与格式化）；`scripts/summarize_jira_cache.py` 支持 `--cache-id` / `--cache-file` / `--json` / `--out`。
+- README 补充「缓存汇总」用法；`storage/cache_owner_summary*.txt` 为本地生成物，**不入库**（`.gitignore`）。
+
+**一键启动（Windows）**
+
+- `start_kanban.bat` 改为 **纯 ASCII + `goto` 错误分支**，避免 CMD 在默认代码页下误解析 UTF-8 导致 `if (...)` 结构损坏；启动前设置 **`PYTHONPATH`** 为项目根，保证 `flask --app app.main` 可导入。
+
+**测试**
+
+- `tests/test_cache_summary.py`；Task Owner 相关用例断言 `task_owner_source`。
+- 本地全量回归：**54 passed**。
+
 ### 2026-02-25
 
 - 单页分区 UI：状态栏、筛选基础+高级、Kanban/详情 70/30、分析区默认折叠。
@@ -85,6 +106,8 @@
 - `GET /api/cached_queries`：列出与当前配置兼容的缓存查询。
 - `GET|POST /api/query?confirmed=true`：触发 JIRA 查询并写缓存。
 
+**离线汇总**：`scripts/summarize_jira_cache.py` — 读取缓存 JSON，按 `normalize_issue` 得到与看板一致的 `metric_owner`，输出 Issue 总数及每位任务负责人名下的明细；每条注明 **task_owner 来源**（字段 / changelog / 推导）（可选 `--json` / `--out`）。
+
 ## 5. 关键业务规则
 
 ### 5.1 解决时间（resolved_at）
@@ -99,8 +122,8 @@
 
 ### 5.2 责任开发人（metric_owner）
 
-1. 若 **Task Owner** 有值（来自 `fields[task_owner_field]` 或 changelog 中 Task Owner / **任务负责人**）：**`metric_owner = task_owner`**。
-2. 否则按经办人与 `role_settings` 推导（产品/测试回退、开发经理等），规则见 `app/normalize.py::_derive_metric_owner`。
+1. 若 **Task Owner** 有值（来自 `fields[task_owner_field]` 或 changelog 中 Task Owner / **任务负责人**）：**`metric_owner = task_owner`**；卡片上 **`task_owner_source`** 分别为 `jira_field` 或 `changelog`。
+2. 否则按经办人与 `role_settings` 推导（产品/测试回退、开发经理等），规则见 `app/normalize.py::_derive_metric_owner`；此时 **`task_owner_source`** 为 `null`。
 
 ### 5.3 甘特图口径（member 模式）
 
@@ -132,12 +155,13 @@
 关键测试文件：
 
 - `tests/test_analytics.py`
+- `tests/test_cache_summary.py`
 - `tests/test_config.py`
 - `tests/test_normalize.py`
 - `tests/test_metrics.py`
 - `tests/test_routes.py`
 
-最近一次相关回归：**52 passed**（本地执行）。
+最近一次相关回归：**54 passed**（本地执行）。
 
 ## 8. 已知限制
 

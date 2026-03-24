@@ -463,6 +463,8 @@ def test_task_owner_custom_field_overrides_metric_owner():
     )
     assert card["metric_owner"] == "张睿妍"
     assert card["task_owner"] == "张睿妍"
+    assert card["task_owner_source"] == "jira_field"
+    assert card["task_owner_jira_field"] == "customfield_99999"
 
 
 def test_task_owner_from_changelog_when_fields_missing():
@@ -493,6 +495,8 @@ def test_task_owner_from_changelog_when_fields_missing():
     card = normalize_issue(issue, base_url="https://jira.example.com")
     assert card["task_owner"] == "李四"
     assert card["metric_owner"] == "李四"
+    assert card["task_owner_source"] == "changelog"
+    assert card["task_owner_jira_field"] is None
 
 
 def test_task_owner_from_changelog_chinese_field_name():
@@ -528,6 +532,7 @@ def test_task_owner_from_changelog_chinese_field_name():
     card = normalize_issue(issue, base_url="https://jira.example.com")
     assert card["task_owner"] == "陈兴"
     assert card["metric_owner"] == "陈兴"
+    assert card["task_owner_source"] == "changelog"
 
 
 def test_task_owner_fields_preferred_over_changelog():
@@ -558,6 +563,7 @@ def test_task_owner_fields_preferred_over_changelog():
     )
     assert card["task_owner"] == "字段快照"
     assert card["metric_owner"] == "字段快照"
+    assert card["task_owner_source"] == "jira_field"
 
 
 def test_task_owner_changelog_cleared_falls_back_to_derive():
@@ -588,6 +594,8 @@ def test_task_owner_changelog_cleared_falls_back_to_derive():
     card = normalize_issue(issue, base_url="https://jira.example.com")
     assert card["task_owner"] is None
     assert card["metric_owner"] == "经办人王"
+    assert card["task_owner_source"] is None
+    assert card["task_owner_jira_field"] is None
 
 
 def test_metric_owner_quality_skips_pm_and_dm_in_fallback():
